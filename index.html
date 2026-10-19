@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRU Sovereign Search Engine v1.2</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-bright: #f0f6fc;
+            --accent-color: #58a6ff;
+            --highlight-bg: #388bfd33;
+            --highlight-border: #388bfd66;
+            --success: #238636;
+            --warning: #9e6a03;
+            --danger: #da3633;
+            --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 1.05rem;
+            color: var(--text-bright);
+            font-family: var(--font-mono);
+            letter-spacing: 0.4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            font-size: 0.68rem;
+            padding: 3px 7px;
+            border-radius: 4px;
+            background-color: var(--warning);
+            color: #fff;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+
+        .search-container {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            padding: 4px 0 10px 0;
+            z-index: 100;
+        }
+
+        input[type="search"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-bright);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type="search"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        input[type="search"]:disabled {
+            opacity: 0.55;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            gap: 8px;
+            font-size: 0.72rem;
+            color: #8b949e;
+            font-family: var(--font-mono);
+        }
+
+        .meta-row button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: #8b949e;
+            font-size: 0.68rem;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            cursor: pointer;
+        }
+
+        .meta-row button:active {
+            background: var(--card-bg);
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .result-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .score-tag {
+            color: #8b949e;
+            font-size: 0.72rem;
+            white-space: nowrap;
+        }
+
+        mark {
+            background-color: var(--highlight-bg);
+            color: var(--text-bright);
+            border-bottom: 1px solid var(--highlight-border);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .loading, .empty {
+            text-align: center;
+            padding: 28px 12px;
+            font-family: var(--font-mono);
+            color: #8b949e;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        .airgap {
+            font-size: 0.68rem;
+            color: #3fb950;
+            font-family: var(--font-mono);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            TRU ENGINE
+            <span id="status" class="status-badge">BOOT</span>
+        </h1>
+        <div class="airgap" id="airgapStatus">AIR-GAPPED • LOCAL ONLY</div>
+    </header>
+
+    <div class="search-container">
+        <input type="search" id="searchInput" placeholder="Search local knowledge base..." disabled autocomplete="off" spellcheck="false">
+        <div class="meta-row">
+            <span id="statsBar">Initializing local index...</span>
+            <button id="rebuildBtn" title="Force rebuild index">REBUILD</button>
+        </div>
+    </div>
+
+    <div class="results-list" id="results">
+        <div class="loading">Loading sovereign index...</div>
+    </div>
+
+    <script>
+        // ============================================================
+        // TRU SOVEREIGN SEARCH ENGINE v1.2
+        // Air-gapped • Zero external dependencies • IndexedDB persistent
+        // ============================================================
+
+        const DATASET_VERSION = "1.2.0";
+        const DB_NAME = "TRU_Search_DB";
+        const DB_VERSION = 2;
+        const STORE_NAME = "indices";
+
+        // --- EXPANDED SEED DATASET (KJV Core + TRU Architecture) ---
+        const TRU_DATASET = [
+            // Core KJV
+            { id: "GEN_1_1", reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+            { id: "GEN_1_3", reference: "Genesis 1:3", text: "And God said, Let there be light: and there was light." },
+            { id: "JHN_1_1", reference: "John 1:1", text: "In the beginning was the Word, and the Word was with God, and the Word was God." },
+            { id: "JHN_1_14", reference: "John 1:14", text: "And the Word was made flesh, and dwelt among us, and we beheld his glory, the glory as of the only begotten of the Father, full of grace and truth." },
+            { id: "JHN_3_16", reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life." },
+            { id: "JHN_14_6", reference: "John 14:6", text: "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me." },
+            { id: "PSA_23_1", reference: "Psalm 23:1", text: "The LORD is my shepherd; I shall not want." },
+            { id: "PSA_119_105", reference: "Psalm 119:105", text: "Thy word is a lamp unto my feet, and a light unto my path." },
+            { id: "PRO_3_5", reference: "Proverbs 3:5", text: "Trust in the LORD with all thine heart; and lean not unto thine own understanding." },
+            { id: "PRO_3_6", reference: "Proverbs 3:6", text: "In all thy ways acknowledge him, and he shall direct thy paths." },
+            { id: "MAT_6_33", reference: "Matthew 6:33", text: "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you." },
+            { id: "ROM_8_28", reference: "Romans 8:28", text: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose." },
+            { id: "PHI_4_13", reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
+            { id: "2TI_3_16", reference: "2 Timothy 3:16", text: "All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness." },
+            { id: "HEB_11_1", reference: "Hebrews 11:1", text: "Now faith is the substance of things hoped for, the evidence of things not seen." },
+            { id: "REV_22_13", reference: "Revelation 22:13", text: "I am Alpha and Omega, the beginning and the end, the first and the last." },
+
+            // TRU Architecture Nodes
+            { id: "TRU_ARCH_1", reference: "TRU System Architecture", text: "Sovereign air-gapped zero-dependency local vector knowledge engine running natively within browser storage." },
+            { id: "TRU_ARCH_2", reference: "TRU Data Policy", text: "Offline-first IndexedDB persistence guaranteeing absolute user data privacy and local execution independence." },
+            { id: "TRU_ARCH_3", reference: "TRU Mission", text: "Clarity toward salvation. A free, spreadable, offline intelligence grounded in the Word without gatekeepers or coercion." },
+            { id: "TRU_ARCH_4", reference: "TRU Constraints", text: "Pure vanilla JavaScript. Single-file HTML. No CDNs. No remote APIs. No telemetry. Full local control." },
+            { id: "TRU_ARCH_5", reference: "TRU Persistence", text: "All knowledge indices, conversational memory, and user notes stored exclusively in IndexedDB and localStorage." },
+            { id: "TRU_ARCH_6", reference: "TRU Search Core", text: "Local inverted index with BM25-lite scoring, field boosting, and high-performance token matching for scriptural and architectural retrieval." }
+        ];
+
+        // --- STATE ---
+        let db = null;
+        let globalIndexData = null;
+        let isReady = false;
+
+        // --- INDEXEDDB ---
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: "key" });
+                    }
+                };
+
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function idbGet(key) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function idbPut(record) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(record);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // --- TOKENIZER ---
+        function tokenize(text) {
+            return text.toLowerCase()
+                .replace(/[^\w\s']/g, ' ')
+                .split(/\s+/)
+                .filter(t => t.length > 1);
+        }
+
+        // --- INDEX BUILDER ---
+        function buildInvertedIndex(docs) {
+            const index = Object.create(null);
+            const docLengths = Object.create(null);
+            let totalTokens = 0;
+
+            docs.forEach(doc => {
+                const tokens = tokenize(doc.text + " " + doc.reference);
+                docLengths[doc.id] = tokens.length;
+                totalTokens += tokens.length;
+
+                const tf = Object.create(null);
+                tokens.forEach(t => {
+                    tf[t] = (tf[t] || 0) + 1;
+                });
+
+                Object.keys(tf).forEach(term => {
+                    if (!index[term]) index[term] = [];
+                    index[term].push({
+                        id: doc.id,
+                        tf: tf[term]
+                    });
+                });
+            });
+
+            const avgDocLength = totalTokens / docs.length;
+
+            return {
+                index,
+                docLengths,
+                avgDocLength,
+                numDocs: docs.length,
+                version: DATASET_VERSION,
+                builtAt: Date.now()
+            };
+        }
+
+        // --- BM25-LITE SCORER ---
+        function queryIndex(queryStr, indexData, docs, topK = 12) {
+            const queryTokens = tokenize(queryStr);
+            if (queryTokens.length === 0) return [];
+
+            const scores = Object.create(null);
+            const k1 = 1.5;
+            const b = 0.75;
+            const { index, docLengths, avgDocLength, numDocs } = indexData;
+
+            queryTokens.forEach(term => {
+                const postings = index[term];
+                if (!postings) return;
+
+                const df = postings.length;
+                const idf = Math.log(1 + (numDocs - df + 0.5) / (df + 0.5));
+
+                postings.forEach(p => {
+                    const tf = p.tf;
+                    const dl = docLengths[p.id] || 1;
+                    const tfNorm = (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * (dl / avgDocLength)));
+                    const score = idf * tfNorm;
+                    scores[p.id] = (scores[p.id] || 0) + score;
+                });
+            });
+
+            return Object.keys(scores)
+                .map(id => ({
+                    doc: docs.find(d => d.id === id),
+                    score: scores[id]
+                }))
+                .filter(r => r.doc)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, topK);
+        }
+
+        // --- HIGHLIGHTER ---
+        function highlightText(text, query) {
+            const tokens = tokenize(query);
+            if (tokens.length === 0) return text;
+
+            // Escape special regex chars and build safe pattern
+            const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const pattern = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
+            return text.replace(pattern, '<mark>$1</mark>');
+        }
+
+        // --- UI HELPERS ---
+        function setStatus(text, type = "warning") {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.style.backgroundColor = type === "success" ? "var(--success)" :
+                                       type === "danger"  ? "var(--danger)"  : "var(--warning)";
+        }
+
+        function renderResults(results, query = "") {
+            const container = document.getElementById('results');
+            container.innerHTML = "";
+
+            if (results.length === 0) {
+                if (!query.trim()) {
+                    container.innerHTML = `<div class="empty">Type to search the local knowledge base.<br>Index is fully air-gapped.</div>`;
+                } else {
+                    container.innerHTML = `<div class="empty">No local matches for “${query}”.</div>`;
+                }
+                return;
+            }
+
+            results.forEach(({ doc, score }) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <div class="result-title">
+                        <span>${doc.reference}</span>
+                        <span class="score-tag">${score.toFixed(3)}</span>
+                    </div>
+                    <div>${highlightText(doc.text, query)}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- DEBOUNCE ---
+        function debounce(fn, delay) {
+            let timer = null;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // --- CORE BOOTSTRAP ---
+        async function loadOrBuildIndex(forceRebuild = false) {
+            const statsBar = document.getElementById('statsBar');
+            const searchInput = document.getElementById('searchInput');
+
+            setStatus("INDEX", "warning");
+            statsBar.textContent = forceRebuild ? "Rebuilding index..." : "Checking local index...";
+
+            try {
+                await openDB();
+
+                let indexData = null;
+
+                if (!forceRebuild) {
+                    const stored = await idbGet("main_index");
+                    if (stored && stored.version === DATASET_VERSION) {
+                        indexData = stored;
+                        statsBar.textContent = `Loaded cached index • ${indexData.numDocs} nodes • v${DATASET_VERSION}`;
+                    }
+                }
+
+                if (!indexData) {
+                    const start = performance.now();
+                    indexData = buildInvertedIndex(TRU_DATASET);
+                    const elapsed = (performance.now() - start).toFixed(1);
+
+                    await idbPut({
+                        key: "main_index",
+                        ...indexData
+                    });
+
+                    statsBar.textContent = `Index built & stored • ${indexData.numDocs} nodes • ${elapsed}ms • v${DATASET_VERSION}`;
+                }
+
+                globalIndexData = indexData;
+                isReady = true;
+
+                setStatus("READY", "success");
+                searchInput.disabled = false;
+                searchInput.focus();
+
+                renderResults([]);
+
+            } catch (err) {
+                console.error(err);
+                setStatus("ERROR", "danger");
+                statsBar.textContent = "Index failure: " + (err.message || err);
+                document.getElementById('results').innerHTML =
+                    `<div class="empty">Local storage error. Search unavailable.</div>`;
+            }
+        }
+
+        // --- EVENT WIRING ---
+        const debouncedSearch = debounce((query) => {
+            if (!isReady || !globalIndexData) return;
+            const results = queryIndex(query, globalIndexData, TRU_DATASET);
+            renderResults(results, query);
+        }, 120);
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value;
+            if (!query.trim()) {
+                renderResults([], "");
+                return;
+            }
+            debouncedSearch(query);
+        });
+
+        document.getElementById('rebuildBtn').addEventListener('click', () => {
+            if (!isReady) return;
+            document.getElementById('searchInput').disabled = true;
+            isReady = false;
+            loadOrBuildIndex(true);
+        });
+
+        // --- START ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadOrBuildIndex(false);
+        });
+    </script>
+</body>
+</html>
