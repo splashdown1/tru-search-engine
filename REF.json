@@ -1,0 +1,15 @@
+{
+  "v": "2.0.0",
+  "as_of": "2026-10-22T22:35:32Z",
+  "role": "integrity marker only \u2014 does not feed the index",
+  "index_sha256": "daabf53ab47c954fc42322b130c334f10d58790b17a32573d327b16341b7dff5",
+  "seed_sha256": "a71e0262269144cec208ef60fa8ca09e4f52aca145478d5f41f19859208d3977",
+  "packs_sha256": {
+    "tru-network-pack.json": "8291d92aac58d267e320b37d1afa7c866d152c33c19e941928091d827dd38f27",
+    "tru-signal-pack.json": "83d5c32b6d24d92e3e5e638e7fe24467786abf2429503486472a39337474d4a8",
+    "tru-storm-pack.json": "afbe2fa8ed46c3049f410708dc44e10b3efe9dc6a41e1d536da309ffc5c97df1",
+    "tru-water-pack.json": "c9f6d9a379bc6ab5fb5d107c4e14fe5d10ce75d2985850d0faa2ac1a99709288"
+  },
+  "pages": "https://splashdown1.github.io/tru-search-engine/",
+  "note": "Compare locally when radio is on. Drift is a fact, not an auto-update. A gap stays a gap."
+}
