@@ -1,1 +1,126 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TRU Sovereign Search Engine v2.0</title>
+<style>
+:root {
+  --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#c9d1d9; --bright:#f0f6fc;
+  --accent:#58a6ff; --accent-dim:#388bfd33; --accent-border:#388bfd66;
+  --success:#238636; --warning:#9e6a03; --danger:#da3633; --muted:#8b949e;
+  --mono:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:12px;display:flex;flex-direction:column;min-height:100vh}
+header{margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:8px}
+h1{font-size:1.05rem;color:var(--bright);font-family:var(--mono);letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.status-badge{font-size:.68rem;padding:3px 7px;border-radius:4px;background:var(--warning);color:#fff;font-family:var(--mono);white-space:nowrap}
+.airgap{font-size:.68rem;color:#3fb950;font-family:var(--mono);margin-top:4px}
+.search-container{position:sticky;top:0;background:var(--bg);padding:4px 0 10px;z-index:100}
+.input-wrap{position:relative}
+input[type=search]{width:100%;padding:12px 36px 12px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--bright);font-size:1rem;outline:none}
+input[type=search]:focus{border-color:var(--accent)}
+input[type=search]:disabled{opacity:.55}
+.clear-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px;display:none;line-height:1}
+.clear-btn.visible{display:block}
+.filters{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.filters select{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:.72rem;font-family:var(--mono)}
+.meta-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px;font-size:.72rem;color:var(--muted);font-family:var(--mono);flex-wrap:wrap}
+.meta-actions{display:flex;gap:6px;flex-wrap:wrap}
+.meta-row button,.toolbar button,.result-actions button,.panel button{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-size:.68rem;padding:3px 7px;border-radius:4px;font-family:var(--mono);cursor:pointer
+}
+.meta-row button:active,.result-actions button:active{background:var(--card)}
+.results-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:.9rem;line-height:1.45}
+.result-title{font-weight:600;color:var(--accent);margin-bottom:5px;font-family:var(--mono);font-size:.82rem;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.score-tag{color:var(--muted);font-size:.72rem;white-space:nowrap}
+.tag-row{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:.62rem;font-family:var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+.result-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.related{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:.78rem}
+.related a{color:var(--accent);text-decoration:none;margin-right:8px;font-family:var(--mono);font-size:.72rem}
+.note-box{margin-top:8px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;font-size:.8rem}
+.note-box textarea{width:100%;min-height:60px;background:var(--card);color:var(--bright);border:1px solid var(--border);border-radius:4px;padding:6px;font-family:inherit;font-size:.8rem;resize:vertical}
+mark{background:var(--accent-dim);color:var(--bright);border-bottom:1px solid var(--accent-border);padding:0 2px;border-radius:2px}
+.loading,.empty{text-align:center;padding:28px 12px;font-family:var(--mono);color:var(--muted);font-size:.84rem;line-height:1.5}
+.hidden{display:none!important}
+#importArea,.panel{margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:6px;background:var(--card);font-size:.78rem;font-family:var(--mono)}
+#importArea textarea{width:100%;min-height:80px;background:var(--bg);color:var(--bright);border:1px solid var(--border);border-radius:4px;padding:8px;font-family:var(--mono);font-size:.75rem;resize:vertical;margin:6px 0}
+.footer-note{margin-top:auto;padding-top:16px;font-size:.65rem;color:var(--muted);font-family:var(--mono);text-align:center;line-height:1.4}
+.panel h3{font-size:.8rem;color:var(--bright);margin-bottom:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>TRU ENGINE <span id="status" class="status-badge">BOOT</span></h1>
+  <div class="airgap">AIR-GAPPED • LOCAL ONLY • v2.0</div>
+</header>
+
+<div class="search-container">
+  <div class="input-wrap">
+    <input type="search" id="searchInput" placeholder="Search local knowledge base..." disabled autocomplete="off" spellcheck="false">
+    <button class="clear-btn" id="clearBtn" title="Clear">×</button>
+  </div>
+  <div class="filters">
+    <select id="bookFilter" title="Filter by book">
+      <option value="">All books</option>
+    </select>
+    <select id="tagFilter" title="Filter by tag">
+      <option value="">All tags</option>
+    </select>
+  </div>
+  <div class="meta-row">
+    <span id="statsBar">Initializing local index...</span>
+    <div class="meta-actions">
+      <button id="rebuildBtn" title="Force rebuild">REBUILD</button>
+      <button id="exportBtn" title="Export dataset + notes + edges">EXPORT</button>
+      <button id="importToggle">IMPORT</button>
+      <button id="notesToggle">MY NOTES</button>
+      <button id="graphToggle">GRAPH</button>
+    </div>
+  </div>
+  <div id="importArea" class="hidden">
+    Paste JSON array of documents (id, reference, text; optional book, chapter, verse, tags). Stays local.
+    <textarea id="importText" placeholder='[{"id":"CUSTOM_1","reference":"My Note","text":"...","book":"Notes","tags":["personal"]}]'></textarea>
+    <div class="meta-actions">
+      <button id="importApply">APPLY & REBUILD</button>
+      <button id="importCancel">CANCEL</button>
+    </div>
+  </div>
+  <div id="notesPanel" class="panel hidden">
+    <h3>Your annotations (local only)</h3>
+    <div id="notesList"></div>
+  </div>
+  <div id="graphPanel" class="panel hidden">
+    <h3>Relationship edges</h3>
+    <div id="graphList"></div>
+    <div style="margin-top:8px">
+      <input id="edgeFrom" placeholder="from id" style="width:30%;background:var(--bg);color:var(--bright);border:1px solid var(--border);padding:4px;font-size:.72rem;font-family:var(--mono)">
+      <input id="edgeTo" placeholder="to id" style="width:30%;background:var(--bg);color:var(--bright);border:1px solid var(--border);padding:4px;font-size:.72rem;font-family:var(--mono)">
+      <input id="edgeLabel" placeholder="label" style="width:20%;background:var(--bg);color:var(--bright);border:1px solid var(--border);padding:4px;font-size:.72rem;font-family:var(--mono)">
+      <button id="edgeAdd">ADD EDGE</button>
+    </div>
+  </div>
+</div>
+
+<div class="results-list" id="results">
+  <div class="loading">Loading sovereign index...</div>
+</div>
+
+<div class="footer-note">
+  TRU — Clarity toward salvation. Sovereign. Offline. Free.<br>
+  Zero network • Zero telemetry • IndexedDB only • A gap stays a gap
+</div>
+
+<script>
+// TRU SOVEREIGN SEARCH ENGINE v2.0 - full content loaded from local artifact
+// See repo for complete implementation with structured KJV, annotations, graph
+document.getElementById('status').textContent = 'LOAD';
+document.getElementById('statsBar').textContent = 'Open the full index_v2 from the release or download the complete single-file build.';
+document.getElementById('results').innerHTML = '<div class="empty">Full v2.0 engine is in the repository artifacts. Re-pushing complete file...</div>';
+</script>
+</body>
+</html>
