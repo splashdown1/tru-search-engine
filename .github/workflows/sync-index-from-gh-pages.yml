@@ -1,0 +1,43 @@
+name: Sync index from gh-pages
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/sync-index-from-gh-pages.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-tree
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: live-tree
+
+      - name: Copy full engine onto main
+        run: |
+          cp live-tree/index.html main-tree/index.html
+          # Prefer single-file; drop external engine.js if present
+          rm -f main-tree/engine.js
+          cd main-tree
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git add -u engine.js || true
+          if git diff --staged --quiet; then
+            echo "Already in sync"
+          else
+            git commit -m "Sync full single-file index.html from gh-pages"
+            git push origin HEAD:main
+          fi
