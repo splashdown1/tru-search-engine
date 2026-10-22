@@ -1,0 +1,56 @@
+name: Daily Integrity Checkpoint
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages (live tree)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Rebuild REF.json from artifacts
+        run: |
+          python3 << 'PY'
+          import hashlib, json, os, datetime
+          def sha(path):
+            with open(path, 'rb') as f:
+              return hashlib.sha256(f.read()).hexdigest()
+          packs = {}
+          if os.path.isdir('packs'):
+            for name in sorted(os.listdir('packs')):
+              if name.endswith('.json'):
+                packs[name] = sha(os.path.join('packs', name))
+          ref = {
+            "v": "2.0.0",
+            "as_of": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "role": "integrity marker only — does not feed the index",
+            "index_sha256": sha('index.html') if os.path.exists('index.html') else None,
+            "seed_sha256": sha('tru-seed-full.json') if os.path.exists('tru-seed-full.json') else None,
+            "packs_sha256": packs,
+            "pages": "https://splashdown1.github.io/tru-search-engine/",
+            "note": "Compare locally when radio is on. Drift is a fact, not an auto-update. A gap stays a gap."
+          }
+          open('REF.json', 'w').write(json.dumps(ref, indent=2) + '\n')
+          print(json.dumps(ref, indent=2))
+          PY
+
+      - name: Commit if REF changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add REF.json
+          if git diff --staged --quiet; then
+            echo "No REF change"
+          else
+            git commit -m "Daily integrity checkpoint $(date -u +%Y-%m-%d)"
+            git push origin HEAD:gh-pages
+          fi
