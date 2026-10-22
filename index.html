@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRU Sovereign Search Engine v1.3</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --bright: #f0f6fc;
+            --accent: #58a6ff;
+            --accent-dim: #388bfd33;
+            --accent-border: #388bfd66;
+            --success: #238636;
+            --warning: #9e6a03;
+            --danger: #da3633;
+            --muted: #8b949e;
+            --mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 12px; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        header { margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        h1 {
+            font-size: 1.05rem; color: var(--bright); font-family: var(--mono);
+            letter-spacing: 0.4px; display: flex; justify-content: space-between;
+            align-items: center; gap: 8px;
+        }
+        .status-badge {
+            font-size: 0.68rem; padding: 3px 7px; border-radius: 4px;
+            background: var(--warning); color: #fff; font-family: var(--mono); white-space: nowrap;
+        }
+        .airgap { font-size: 0.68rem; color: #3fb950; font-family: var(--mono); margin-top: 4px; }
+        .search-container {
+            position: sticky; top: 0; background: var(--bg); padding: 4px 0 10px; z-index: 100;
+        }
+        .input-wrap { position: relative; }
+        input[type="search"] {
+            width: 100%; padding: 12px 36px 12px 12px; border-radius: 6px;
+            border: 1px solid var(--border); background: var(--card); color: var(--bright);
+            font-size: 1rem; outline: none; transition: border-color 0.15s;
+        }
+        input[type="search"]:focus { border-color: var(--accent); }
+        input[type="search"]:disabled { opacity: 0.55; }
+        .clear-btn {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--muted); font-size: 1.1rem;
+            cursor: pointer; padding: 4px 6px; display: none; line-height: 1;
+        }
+        .clear-btn.visible { display: block; }
+        .meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 6px; gap: 8px; font-size: 0.72rem; color: var(--muted); font-family: var(--mono);
+            flex-wrap: wrap;
+        }
+        .meta-actions { display: flex; gap: 6px; }
+        .meta-row button, .toolbar button {
+            background: transparent; border: 1px solid var(--border); color: var(--muted);
+            font-size: 0.68rem; padding: 3px 7px; border-radius: 4px; font-family: var(--mono);
+            cursor: pointer;
+        }
+        .meta-row button:active, .toolbar button:active { background: var(--card); }
+        .toolbar {
+            display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .results-list { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+        .result-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 12px; font-size: 0.9rem; line-height: 1.45;
+        }
+        .result-title {
+            font-weight: 600; color: var(--accent); margin-bottom: 5px; font-family: var(--mono);
+            font-size: 0.82rem; display: flex; justify-content: space-between; gap: 8px; align-items: center;
+        }
+        .score-tag { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+        .result-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .result-actions button {
+            background: transparent; border: 1px solid var(--border); color: var(--muted);
+            font-size: 0.65rem; padding: 2px 6px; border-radius: 3px; font-family: var(--mono); cursor: pointer;
+        }
+        mark {
+            background: var(--accent-dim); color: var(--bright);
+            border-bottom: 1px solid var(--accent-border); padding: 0 2px; border-radius: 2px;
+        }
+        .loading, .empty {
+            text-align: center; padding: 28px 12px; font-family: var(--mono);
+            color: var(--muted); font-size: 0.84rem; line-height: 1.5;
+        }
+        .hidden { display: none !important; }
+        #importArea {
+            margin-top: 8px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px;
+            background: var(--card); font-size: 0.78rem; font-family: var(--mono);
+        }
+        #importArea textarea {
+            width: 100%; min-height: 80px; background: var(--bg); color: var(--bright);
+            border: 1px solid var(--border); border-radius: 4px; padding: 8px; font-family: var(--mono);
+            font-size: 0.75rem; resize: vertical; margin: 6px 0;
+        }
+        .footer-note {
+            margin-top: auto; padding-top: 16px; font-size: 0.65rem; color: var(--muted);
+            font-family: var(--mono); text-align: center; line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            TRU ENGINE
+            <span id="status" class="status-badge">BOOT</span>
+        </h1>
+        <div class="airgap" id="airgapStatus">AIR-GAPPED • LOCAL ONLY • v1.3</div>
+    </header>
+
+    <div class="search-container">
+        <div class="input-wrap">
+            <input type="search" id="searchInput" placeholder="Search local knowledge base..." disabled autocomplete="off" spellcheck="false">
+            <button class="clear-btn" id="clearBtn" title="Clear" aria-label="Clear search">×</button>
+        </div>
+        <div class="meta-row">
+            <span id="statsBar">Initializing local index...</span>
+            <div class="meta-actions">
+                <button id="rebuildBtn" title="Force rebuild index from seed + imports">REBUILD</button>
+                <button id="exportBtn" title="Export current dataset as JSON">EXPORT</button>
+                <button id="importToggle" title="Import additional local documents">IMPORT</button>
+            </div>
+        </div>
+        <div id="importArea" class="hidden">
+            Paste JSON array of documents (each needs <code>id</code>, <code>reference</code>, <code>text</code>). Stays local.
+            <textarea id="importText" placeholder='[{"id":"CUSTOM_1","reference":"My Note","text":"..."}]'></textarea>
+            <div class="meta-actions">
+                <button id="importApply">APPLY &amp; REBUILD</button>
+                <button id="importCancel">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-list" id="results">
+        <div class="loading">Loading sovereign index...</div>
+    </div>
+
+    <div class="footer-note">
+        TRU — Clarity toward salvation. Sovereign. Offline. Free.<br>
+        Zero network • Zero telemetry • IndexedDB only
+    </div>
+
+    <script>
+        // ============================================================
+        // TRU SOVEREIGN SEARCH ENGINE v1.3
+        // Air-gapped • Zero external dependencies • IndexedDB persistent
+        // Field boosting • Phrase bonus • Local import/export
+        // ============================================================
+
+        const DATASET_VERSION = "1.3.0";
+        const DB_NAME = "TRU_Search_DB";
+        const DB_VERSION = 3;
+        const STORE_NAME = "indices";
+        const IMPORT_KEY = "user_imports";
+
+        // --- SEED DATASET (KJV Core + TRU Architecture) ---
+        const TRU_SEED = [
+            // Core KJV
+            { id: "GEN_1_1", reference: "Genesis 1:1", text: "In the beginning God created the heaven and the earth." },
+            { id: "GEN_1_3", reference: "Genesis 1:3", text: "And God said, Let there be light: and there was light." },
+            { id: "GEN_1_27", reference: "Genesis 1:27", text: "So God created man in his own image, in the image of God created he him; male and female created he them." },
+            { id: "EXO_20_3", reference: "Exodus 20:3", text: "Thou shalt have no other gods before me." },
+            { id: "DEU_6_4", reference: "Deuteronomy 6:4", text: "Hear, O Israel: The LORD our God is one LORD." },
+            { id: "DEU_6_5", reference: "Deuteronomy 6:5", text: "And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might." },
+            { id: "JOS_1_9", reference: "Joshua 1:9", text: "Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest." },
+            { id: "PSA_23_1", reference: "Psalm 23:1", text: "The LORD is my shepherd; I shall not want." },
+            { id: "PSA_23_4", reference: "Psalm 23:4", text: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me." },
+            { id: "PSA_46_1", reference: "Psalm 46:1", text: "God is our refuge and strength, a very present help in trouble." },
+            { id: "PSA_119_105", reference: "Psalm 119:105", text: "Thy word is a lamp unto my feet, and a light unto my path." },
+            { id: "PRO_3_5", reference: "Proverbs 3:5", text: "Trust in the LORD with all thine heart; and lean not unto thine own understanding." },
+            { id: "PRO_3_6", reference: "Proverbs 3:6", text: "In all thy ways acknowledge him, and he shall direct thy paths." },
+            { id: "ISA_40_31", reference: "Isaiah 40:31", text: "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint." },
+            { id: "ISA_53_5", reference: "Isaiah 53:5", text: "But he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed." },
+            { id: "JER_29_11", reference: "Jeremiah 29:11", text: "For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end." },
+            { id: "MIC_6_8", reference: "Micah 6:8", text: "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?" },
+            { id: "MAT_5_3", reference: "Matthew 5:3", text: "Blessed are the poor in spirit: for theirs is the kingdom of heaven." },
+            { id: "MAT_6_33", reference: "Matthew 6:33", text: "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you." },
+            { id: "MAT_11_28", reference: "Matthew 11:28", text: "Come unto me, all ye that labour and are heavy laden, and I will give you rest." },
+            { id: "MAT_22_37", reference: "Matthew 22:37", text: "Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, and with all thy soul, and with all thy mind." },
+            { id: "MAT_28_19", reference: "Matthew 28:19", text: "Go ye therefore, and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost." },
+            { id: "JHN_1_1", reference: "John 1:1", text: "In the beginning was the Word, and the Word was with God, and the Word was God." },
+            { id: "JHN_1_14", reference: "John 1:14", text: "And the Word was made flesh, and dwelt among us, and we beheld his glory, the glory as of the only begotten of the Father, full of grace and truth." },
+            { id: "JHN_3_16", reference: "John 3:16", text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life." },
+            { id: "JHN_8_32", reference: "John 8:32", text: "And ye shall know the truth, and the truth shall make you free." },
+            { id: "JHN_14_6", reference: "John 14:6", text: "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me." },
+            { id: "ROM_3_23", reference: "Romans 3:23", text: "For all have sinned, and come short of the glory of God." },
+            { id: "ROM_6_23", reference: "Romans 6:23", text: "For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord." },
+            { id: "ROM_8_28", reference: "Romans 8:28", text: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose." },
+            { id: "ROM_10_9", reference: "Romans 10:9", text: "That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved." },
+            { id: "1CO_13_4", reference: "1 Corinthians 13:4", text: "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up." },
+            { id: "2CO_5_17", reference: "2 Corinthians 5:17", text: "Therefore if any man be in Christ, he is a new creature: old things are passed away; behold, all things are become new." },
+            { id: "GAL_5_22", reference: "Galatians 5:22", text: "But the fruit of the Spirit is love, joy, peace, longsuffering, gentleness, goodness, faith." },
+            { id: "EPH_2_8", reference: "Ephesians 2:8", text: "For by grace are ye saved through faith; and that not of yourselves: it is the gift of God." },
+            { id: "PHI_4_6", reference: "Philippians 4:6", text: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God." },
+            { id: "PHI_4_13", reference: "Philippians 4:13", text: "I can do all things through Christ which strengtheneth me." },
+            { id: "COL_3_23", reference: "Colossians 3:23", text: "And whatsoever ye do, do it heartily, as to the Lord, and not unto men." },
+            { id: "2TI_3_16", reference: "2 Timothy 3:16", text: "All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness." },
+            { id: "HEB_11_1", reference: "Hebrews 11:1", text: "Now faith is the substance of things hoped for, the evidence of things not seen." },
+            { id: "JAS_1_5", reference: "James 1:5", text: "If any of you lack wisdom, let him ask of God, that giveth to all men liberally, and upbraideth not; and it shall be given him." },
+            { id: "1PE_5_7", reference: "1 Peter 5:7", text: "Casting all your care upon him; for he careth for you." },
+            { id: "1JN_1_9", reference: "1 John 1:9", text: "If we confess our sins, he is faithful and just to forgive us our sins, and to cleanse us from all unrighteousness." },
+            { id: "REV_3_20", reference: "Revelation 3:20", text: "Behold, I stand at the door, and knock: if any man hear my voice, and open the door, I will come in to him, and will sup with him, and he with me." },
+            { id: "REV_21_4", reference: "Revelation 21:4", text: "And God shall wipe away all tears from their eyes; and there shall be no more death, neither sorrow, nor crying, neither shall there be any more pain: for the former things are passed away." },
+            { id: "REV_22_13", reference: "Revelation 22:13", text: "I am Alpha and Omega, the beginning and the end, the first and the last." },
+
+            // TRU Architecture Nodes
+            { id: "TRU_ARCH_1", reference: "TRU System Architecture", text: "Sovereign air-gapped zero-dependency local vector knowledge engine running natively within browser storage. No cloud, no CDN, no remote call." },
+            { id: "TRU_ARCH_2", reference: "TRU Data Policy", text: "Offline-first IndexedDB persistence guaranteeing absolute user data privacy and local execution independence. A gap stays a gap." },
+            { id: "TRU_ARCH_3", reference: "TRU Mission", text: "Clarity toward salvation. A free, spreadable, offline intelligence grounded in the Word without gatekeepers or coercion." },
+            { id: "TRU_ARCH_4", reference: "TRU Constraints", text: "Pure vanilla JavaScript. Single-file HTML. No CDNs. No remote APIs. No telemetry. Full local control." },
+            { id: "TRU_ARCH_5", reference: "TRU Persistence", text: "All knowledge indices, conversational memory, and user notes stored exclusively in IndexedDB and localStorage." },
+            { id: "TRU_ARCH_6", reference: "TRU Search Core", text: "Local inverted index with BM25-lite scoring, field boosting on reference, phrase match bonus, and high-performance token matching for scriptural and architectural retrieval." },
+            { id: "TRU_ARCH_7", reference: "TRU Import Export", text: "Users may import additional local documents as JSON and export the full working dataset. Everything remains air-gapped." },
+            { id: "TRU_ARCH_8", reference: "TRU Gap Rule", text: "When the local index has no match, the answer is a gap. The engine does not invent, guess, or phone home." }
+        ];
+
+        // --- STATE ---
+        let db = null;
+        let globalIndexData = null;
+        let workingDocs = [];          // seed + user imports
+        let isReady = false;
+
+        // --- INDEXEDDB ---
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: "key" });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function idbGet(key) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function idbPut(record) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(record);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // --- TOKENIZER ---
+        // Keep short scriptural words; only drop pure noise.
+        const STOP = new Set(["the","and","of","to","a","in","is","that","for","it","with","as","be","on","by","an","or","at","from"]);
+        function tokenize(text, keepStops = false) {
+            return text.toLowerCase()
+                .replace(/[^\w\s']/g, " ")
+                .split(/\s+/)
+                .filter(t => t.length > 1 && (keepStops || !STOP.has(t)));
+        }
+
+        // --- INDEX BUILDER (field-aware) ---
+        function buildInvertedIndex(docs) {
+            const index = Object.create(null);
+            const docLengths = Object.create(null);
+            const docMeta = Object.create(null); // token sequences for phrase matching
+            let totalTokens = 0;
+
+            docs.forEach(doc => {
+                // Higher weight on reference/title
+                const refTokens = tokenize(doc.reference || "", true);
+                const bodyTokens = tokenize(doc.text || "", false);
+                const allTokens = [...refTokens, ...refTokens, ...bodyTokens]; // double ref for field boost
+                docLengths[doc.id] = allTokens.length || 1;
+                totalTokens += allTokens.length;
+                docMeta[doc.id] = bodyTokens; // for phrase scan on body
+
+                const tf = Object.create(null);
+                allTokens.forEach(t => { tf[t] = (tf[t] || 0) + 1; });
+
+                Object.keys(tf).forEach(term => {
+                    if (!index[term]) index[term] = [];
+                    index[term].push({ id: doc.id, tf: tf[term] });
+                });
+            });
+
+            return {
+                index,
+                docLengths,
+                docMeta,
+                avgDocLength: totalTokens / Math.max(docs.length, 1),
+                numDocs: docs.length,
+                termCount: Object.keys(index).length,
+                version: DATASET_VERSION,
+                builtAt: Date.now()
+            };
+        }
+
+        // --- BM25-LITE + PHRASE BONUS ---
+        function queryIndex(queryStr, indexData, docs, topK = 16) {
+            const queryTokens = tokenize(queryStr, false);
+            if (queryTokens.length === 0) return [];
+
+            const scores = Object.create(null);
+            const k1 = 1.5, b = 0.75;
+            const { index, docLengths, docMeta, avgDocLength, numDocs } = indexData;
+
+            // Term scoring
+            queryTokens.forEach(term => {
+                const postings = index[term];
+                if (!postings) return;
+                const df = postings.length;
+                const idf = Math.log(1 + (numDocs - df + 0.5) / (df + 0.5));
+                postings.forEach(p => {
+                    const tf = p.tf;
+                    const dl = docLengths[p.id] || 1;
+                    const tfNorm = (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * (dl / avgDocLength)));
+                    scores[p.id] = (scores[p.id] || 0) + idf * tfNorm;
+                });
+            });
+
+            // Phrase / consecutive-order bonus (lightweight)
+            if (queryTokens.length >= 2) {
+                Object.keys(scores).forEach(id => {
+                    const seq = docMeta[id] || [];
+                    let bonus = 0;
+                    for (let i = 0; i < seq.length - 1; i++) {
+                        for (let q = 0; q < queryTokens.length - 1; q++) {
+                            if (seq[i] === queryTokens[q] && seq[i + 1] === queryTokens[q + 1]) {
+                                bonus += 0.35;
+                            }
+                        }
+                    }
+                    // full ordered coverage bonus
+                    let covered = 0;
+                    let pos = -1;
+                    for (const qt of queryTokens) {
+                        const next = seq.indexOf(qt, pos + 1);
+                        if (next > pos) { covered++; pos = next; }
+                    }
+                    if (covered === queryTokens.length) bonus += 0.6;
+                    scores[id] += bonus;
+                });
+            }
+
+            return Object.keys(scores)
+                .map(id => ({ doc: docs.find(d => d.id === id), score: scores[id] }))
+                .filter(r => r.doc && r.score > 0.05)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, topK);
+        }
+
+        // --- HIGHLIGHTER ---
+        function highlightText(text, query) {
+            const tokens = tokenize(query, true);
+            if (tokens.length === 0) return escapeHtml(text);
+            const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+            const pattern = new RegExp(`\\b(${escaped.join("|")})\\b`, "gi");
+            return escapeHtml(text).replace(pattern, "<mark>$1</mark>");
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        // --- UI ---
+        function setStatus(text, type = "warning") {
+            const el = document.getElementById("status");
+            el.textContent = text;
+            el.style.backgroundColor = type === "success" ? "var(--success)" :
+                                       type === "danger"  ? "var(--danger)"  : "var(--warning)";
+        }
+
+        function renderResults(results, query = "") {
+            const container = document.getElementById("results");
+            container.innerHTML = "";
+
+            if (results.length === 0) {
+                if (!query.trim()) {
+                    container.innerHTML = `<div class="empty">Type to search the local knowledge base.<br>Index is fully air-gapped. A gap stays a gap.</div>`;
+                } else {
+                    container.innerHTML = `<div class="empty">No local matches for “${escapeHtml(query)}”.<br>Gap recorded.</div>`;
+                }
+                return;
+            }
+
+            const countNote = document.createElement("div");
+            countNote.className = "empty";
+            countNote.style.padding = "4px 0 2px";
+            countNote.style.fontSize = "0.72rem";
+            countNote.textContent = `${results.length} local hit${results.length === 1 ? "" : "s"}`;
+            container.appendChild(countNote);
+
+            results.forEach(({ doc, score }) => {
+                const card = document.createElement("div");
+                card.className = "result-card";
+                card.innerHTML = `
+                    <div class="result-title">
+                        <span>${escapeHtml(doc.reference)}</span>
+                        <span class="score-tag">${score.toFixed(3)}</span>
+                    </div>
+                    <div>${highlightText(doc.text, query)}</div>
+                    <div class="result-actions">
+                        <button data-copy="${escapeHtml(doc.reference + " — " + doc.text)}">COPY</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            container.querySelectorAll("[data-copy]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const t = btn.getAttribute("data-copy");
+                    navigator.clipboard?.writeText(t).then(() => {
+                        btn.textContent = "COPIED";
+                        setTimeout(() => { btn.textContent = "COPY"; }, 1200);
+                    }).catch(() => {});
+                });
+            });
+        }
+
+        function debounce(fn, delay) {
+            let timer = null;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // --- DATASET ASSEMBLY ---
+        async function loadUserImports() {
+            try {
+                const stored = await idbGet(IMPORT_KEY);
+                if (stored && Array.isArray(stored.docs)) return stored.docs;
+            } catch (_) {}
+            return [];
+        }
+
+        async function saveUserImports(docs) {
+            await idbPut({ key: IMPORT_KEY, docs, savedAt: Date.now() });
+        }
+
+        function mergeDocs(imports) {
+            const byId = Object.create(null);
+            TRU_SEED.forEach(d => { byId[d.id] = d; });
+            (imports || []).forEach(d => {
+                if (d && d.id && d.reference && d.text) byId[d.id] = d;
+            });
+            return Object.values(byId);
+        }
+
+        // --- CORE BOOTSTRAP ---
+        async function loadOrBuildIndex(forceRebuild = false) {
+            const statsBar = document.getElementById("statsBar");
+            const searchInput = document.getElementById("searchInput");
+
+            setStatus("INDEX", "warning");
+            statsBar.textContent = forceRebuild ? "Rebuilding index..." : "Checking local index...";
+            searchInput.disabled = true;
+            isReady = false;
+
+            try {
+                await openDB();
+                const imports = await loadUserImports();
+                workingDocs = mergeDocs(imports);
+
+                let indexData = null;
+                if (!forceRebuild) {
+                    const stored = await idbGet("main_index");
+                    if (stored && stored.version === DATASET_VERSION && stored.numDocs === workingDocs.length) {
+                        indexData = stored;
+                        statsBar.textContent = `Loaded cached • ${indexData.numDocs} nodes • ${indexData.termCount || "?"} terms • v${DATASET_VERSION}`;
+                    }
+                }
+
+                if (!indexData) {
+                    const start = performance.now();
+                    indexData = buildInvertedIndex(workingDocs);
+                    const elapsed = (performance.now() - start).toFixed(1);
+                    await idbPut({ key: "main_index", ...indexData });
+                    const importNote = imports.length ? ` (+${imports.length} imported)` : "";
+                    statsBar.textContent = `Built & stored • ${indexData.numDocs} nodes${importNote} • ${indexData.termCount} terms • ${elapsed}ms • v${DATASET_VERSION}`;
+                }
+
+                globalIndexData = indexData;
+                isReady = true;
+                setStatus("READY", "success");
+                searchInput.disabled = false;
+                searchInput.focus();
+                renderResults([]);
+
+            } catch (err) {
+                console.error(err);
+                setStatus("ERROR", "danger");
+                statsBar.textContent = "Index failure: " + (err.message || err);
+                document.getElementById("results").innerHTML =
+                    `<div class="empty">Local storage error. Search unavailable.</div>`;
+            }
+        }
+
+        // --- EVENTS ---
+        const debouncedSearch = debounce((query) => {
+            if (!isReady || !globalIndexData) return;
+            const results = queryIndex(query, globalIndexData, workingDocs);
+            renderResults(results, query);
+        }, 110);
+
+        const searchInput = document.getElementById("searchInput");
+        const clearBtn = document.getElementById("clearBtn");
+
+        searchInput.addEventListener("input", (e) => {
+            const query = e.target.value;
+            clearBtn.classList.toggle("visible", !!query);
+            if (!query.trim()) { renderResults([], ""); return; }
+            debouncedSearch(query);
+        });
+
+        clearBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            clearBtn.classList.remove("visible");
+            renderResults([], "");
+            searchInput.focus();
+        });
+
+        document.getElementById("rebuildBtn").addEventListener("click", () => {
+            if (!isReady && document.getElementById("status").textContent === "ERROR") {
+                loadOrBuildIndex(true);
+                return;
+            }
+            if (!isReady) return;
+            loadOrBuildIndex(true);
+        });
+
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            if (!workingDocs.length) return;
+            const blob = new Blob([JSON.stringify(workingDocs, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `tru-search-dataset-v${DATASET_VERSION}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        const importArea = document.getElementById("importArea");
+        document.getElementById("importToggle").addEventListener("click", () => {
+            importArea.classList.toggle("hidden");
+        });
+        document.getElementById("importCancel").addEventListener("click", () => {
+            importArea.classList.add("hidden");
+        });
+        document.getElementById("importApply").addEventListener("click", async () => {
+            const raw = document.getElementById("importText").value.trim();
+            if (!raw) return;
+            try {
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) throw new Error("Expected a JSON array");
+                const valid = parsed.filter(d => d && d.id && d.reference && d.text);
+                if (!valid.length) throw new Error("No valid documents (need id, reference, text)");
+                await saveUserImports(valid);
+                importArea.classList.add("hidden");
+                document.getElementById("importText").value = "";
+                await loadOrBuildIndex(true);
+            } catch (err) {
+                alert("Import failed: " + (err.message || err));
+            }
+        });
+
+        // Keyboard: focus search with /
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "/" && document.activeElement !== searchInput && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            if (e.key === "Escape" && document.activeElement === searchInput) {
+                searchInput.value = "";
+                clearBtn.classList.remove("visible");
+                renderResults([], "");
+            }
+        });
+
+        // --- START ---
+        window.addEventListener("DOMContentLoaded", () => {
+            loadOrBuildIndex(false);
+        });
+    </script>
+</body>
+</html>
