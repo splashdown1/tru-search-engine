@@ -1,0 +1,50 @@
+name: Patch Search boot fallback
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/patch-search-boot-fallback.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Apply memory-only boot fallback
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          old = '''catch(err){console.error(err);setSt("ERROR","bad");sb.textContent="Index failure: "+(err.message||err);document.getElementById("rs").innerHTML=`<div class="empty">Local storage error.</div>`}\n}'''
+          new = '''catch(err){console.error(err);setSt("MEM","warn");\ntry{docs=merge([]);edges=[...SEDGES];idx=build(docs);ready=true;qi.disabled=false;fillFilters();\nsb.textContent="Memory only • storage blocked • "+docs.length+" seed nodes • search works";\nqi.focus();render([]);}catch(e2){sb.textContent="Index failure: "+(err.message||err);\ndocument.getElementById("rs").innerHTML=`<div class="empty">Local storage error. Try a normal (non-private) window.</div>`}\n}\n}'''
+          if old not in html:
+              if 'Memory only' in html:
+                  print('Already patched')
+              else:
+                  raise SystemExit('catch block not found')
+          else:
+              html = html.replace(old, new, 1)
+              html = html.replace('const VER="2.0.0"', 'const VER="2.0.2"', 1)
+              html = html.replace('AIR-GAPPED • LOCAL ONLY • v2.0', 'AIR-GAPPED • LOCAL ONLY • v2.0.2', 1)
+              html = html.replace('TRU Sovereign Search Engine v2.0', 'TRU Sovereign Search Engine v2.0.2', 1)
+              p.write_text(html, encoding='utf-8')
+              print('Patched', len(html))
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --staged --quiet; then echo No change; else
+            git commit -m "v2.0.2 — enable search when IndexedDB blocked (memory seed)"
+            git push origin HEAD:gh-pages
+          fi
