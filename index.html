@@ -84,7 +84,161 @@ Paste JSON (docs array or full export). Stays local.
 </div>
 <div class="rl" id="rs"><div class="empty">Loading sovereign index...</div></div>
 <div class="fn">TRU — Clarity toward salvation. Sovereign. Offline. Free.<br>Zero network • Zero telemetry • IndexedDB only • A gap stays a gap</div>
-<script src="./engine.js"></script>
-<script>/* engine loads from engine.js same folder — offline when both files saved */</script>
+<script>
+const VER="2.0.0",DBN="TRU_Search_DB",DBV=4,STORE="indices";
+const SEED=[{"id":"GENESIS_1_1","book":"Genesis","chapter":1,"verse":1,"reference":"Genesis 1:1","text":"In the beginning God created the heaven and the earth.","tags":["creation"]},{"id":"GENESIS_1_27","book":"Genesis","chapter":1,"verse":27,"reference":"Genesis 1:27","text":"So God created man in his own image, in the image of God created he him; male and female created he them.","tags":["creation"]},{"id":"GENESIS_3_15","book":"Genesis","chapter":3,"verse":15,"reference":"Genesis 3:15","text":"And I will put enmity between thee and the woman, and between thy seed and her seed; it shall bruise thy head, and thou shalt bruise his heel.","tags":["prophecy"]},{"id":"EXODUS_3_14","book":"Exodus","chapter":3,"verse":14,"reference":"Exodus 3:14","text":"And God said unto Moses, I AM THAT I AM: and he said, Thus shalt thou say unto the children of Israel, I AM hath sent me unto you.","tags":["name"]},{"id":"EXODUS_20_3","book":"Exodus","chapter":20,"verse":3,"reference":"Exodus 20:3","text":"Thou shalt have no other gods before me.","tags":["law"]},{"id":"DEUTERONOMY_6_4","book":"Deuteronomy","chapter":6,"verse":4,"reference":"Deuteronomy 6:4","text":"Hear, O Israel: The LORD our God is one LORD.","tags":["shema"]},{"id":"DEUTERONOMY_6_5","book":"Deuteronomy","chapter":6,"verse":5,"reference":"Deuteronomy 6:5","text":"And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might.","tags":["love"]},{"id":"JOSHUA_1_9","book":"Joshua","chapter":1,"verse":9,"reference":"Joshua 1:9","text":"Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest.","tags":["courage"]},{"id":"PSALM_23_1","book":"Psalm","chapter":23,"verse":1,"reference":"Psalm 23:1","text":"The LORD is my shepherd; I shall not want.","tags":["comfort"]},{"id":"PSALM_23_4","book":"Psalm","chapter":23,"verse":4,"reference":"Psalm 23:4","text":"Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.","tags":["comfort"]},{"id":"PSALM_46_1","book":"Psalm","chapter":46,"verse":1,"reference":"Psalm 46:1","text":"God is our refuge and strength, a very present help in trouble.","tags":["refuge"]},{"id":"PSALM_119_105","book":"Psalm","chapter":119,"verse":105,"reference":"Psalm 119:105","text":"Thy word is a lamp unto my feet, and a light unto my path.","tags":["word"]},{"id":"PROVERBS_3_5","book":"Proverbs","chapter":3,"verse":5,"reference":"Proverbs 3:5","text":"Trust in the LORD with all thine heart; and lean not unto thine own understanding.","tags":["trust"]},{"id":"PROVERBS_3_6","book":"Proverbs","chapter":3,"verse":6,"reference":"Proverbs 3:6","text":"In all thy ways acknowledge him, and he shall direct thy paths.","tags":["trust"]},{"id":"ISAIAH_40_31","book":"Isaiah","chapter":40,"verse":31,"reference":"Isaiah 40:31","text":"But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint.","tags":["strength"]},{"id":"ISAIAH_53_5","book":"Isaiah","chapter":53,"verse":5,"reference":"Isaiah 53:5","text":"But he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed.","tags":["atonement"]},{"id":"JEREMIAH_29_11","book":"Jeremiah","chapter":29,"verse":11,"reference":"Jeremiah 29:11","text":"For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end.","tags":["hope"]},{"id":"MICAH_6_8","book":"Micah","chapter":6,"verse":8,"reference":"Micah 6:8","text":"He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?","tags":["justice"]},{"id":"MATTHEW_5_3","book":"Matthew","chapter":5,"verse":3,"reference":"Matthew 5:3","text":"Blessed are the poor in spirit: for theirs is the kingdom of heaven.","tags":["beatitude"]},{"id":"MATTHEW_6_33","book":"Matthew","chapter":6,"verse":33,"reference":"Matthew 6:33","text":"But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.","tags":["kingdom"]},{"id":"MATTHEW_11_28","book":"Matthew","chapter":11,"verse":28,"reference":"Matthew 11:28","text":"Come unto me, all ye that labour and are heavy laden, and I will give you rest.","tags":["rest"]},{"id":"MATTHEW_22_37","book":"Matthew","chapter":22,"verse":37,"reference":"Matthew 22:37","text":"Jesus said unto him, Thou shalt love the Lord thy God with all thy heart, and with all thy soul, and with all thy mind.","tags":["love"]},{"id":"MATTHEW_28_19","book":"Matthew","chapter":28,"verse":19,"reference":"Matthew 28:19","text":"Go ye therefore, and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost.","tags":["commission"]},{"id":"JOHN_1_1","book":"John","chapter":1,"verse":1,"reference":"John 1:1","text":"In the beginning was the Word, and the Word was with God, and the Word was God.","tags":["word"]},{"id":"JOHN_1_14","book":"John","chapter":1,"verse":14,"reference":"John 1:14","text":"And the Word was made flesh, and dwelt among us, and we beheld his glory, the glory as of the only begotten of the Father, full of grace and truth.","tags":["incarnation"]},{"id":"JOHN_3_16","book":"John","chapter":3,"verse":16,"reference":"John 3:16","text":"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.","tags":["gospel"]},{"id":"JOHN_8_32","book":"John","chapter":8,"verse":32,"reference":"John 8:32","text":"And ye shall know the truth, and the truth shall make you free.","tags":["truth"]},{"id":"JOHN_14_6","book":"John","chapter":14,"verse":6,"reference":"John 14:6","text":"Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.","tags":["way"]},{"id":"ROMANS_3_23","book":"Romans","chapter":3,"verse":23,"reference":"Romans 3:23","text":"For all have sinned, and come short of the glory of God.","tags":["sin"]},{"id":"ROMANS_5_8","book":"Romans","chapter":5,"verse":8,"reference":"Romans 5:8","text":"But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.","tags":["love"]},{"id":"ROMANS_6_23","book":"Romans","chapter":6,"verse":23,"reference":"Romans 6:23","text":"For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord.","tags":["gift"]},{"id":"ROMANS_8_28","book":"Romans","chapter":8,"verse":28,"reference":"Romans 8:28","text":"And we know that all things work together for good to them that love God, to them who are the called according to his purpose.","tags":["providence"]},{"id":"ROMANS_10_9","book":"Romans","chapter":10,"verse":9,"reference":"Romans 10:9","text":"That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved.","tags":["salvation"]},{"id":"1_CORINTHIANS_13_13","book":"1 Corinthians","chapter":13,"verse":13,"reference":"1 Corinthians 13:13","text":"And now abideth faith, hope, charity, these three; but the greatest of these is charity.","tags":["love"]},{"id":"2_CORINTHIANS_5_17","book":"2 Corinthians","chapter":5,"verse":17,"reference":"2 Corinthians 5:17","text":"Therefore if any man be in Christ, he is a new creature: old things are passed away; behold, all things are become new.","tags":["new"]},{"id":"GALATIANS_5_22","book":"Galatians","chapter":5,"verse":22,"reference":"Galatians 5:22","text":"But the fruit of the Spirit is love, joy, peace, longsuffering, gentleness, goodness, faith.","tags":["fruit"]},{"id":"EPHESIANS_2_8","book":"Ephesians","chapter":2,"verse":8,"reference":"Ephesians 2:8","text":"For by grace are ye saved through faith; and that not of yourselves: it is the gift of God.","tags":["grace"]},{"id":"PHILIPPIANS_4_6","book":"Philippians","chapter":4,"verse":6,"reference":"Philippians 4:6","text":"Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God.","tags":["prayer"]},{"id":"PHILIPPIANS_4_13","book":"Philippians","chapter":4,"verse":13,"reference":"Philippians 4:13","text":"I can do all things through Christ which strengtheneth me.","tags":["strength"]},{"id":"2_TIMOTHY_3_16","book":"2 Timothy","chapter":3,"verse":16,"reference":"2 Timothy 3:16","text":"All scripture is given by inspiration of God, and is profitable for doctrine, for reproof, for correction, for instruction in righteousness.","tags":["scripture"]},{"id":"HEBREWS_11_1","book":"Hebrews","chapter":11,"verse":1,"reference":"Hebrews 11:1","text":"Now faith is the substance of things hoped for, the evidence of things not seen.","tags":["faith"]},{"id":"JAMES_1_5","book":"James","chapter":1,"verse":5,"reference":"James 1:5","text":"If any of you lack wisdom, let him ask of God, that giveth to all men liberally, and upbraideth not; and it shall be given him.","tags":["wisdom"]},{"id":"1_PETER_5_7","book":"1 Peter","chapter":5,"verse":7,"reference":"1 Peter 5:7","text":"Casting all your care upon him; for he careth for you.","tags":["care"]},{"id":"1_JOHN_1_9","book":"1 John","chapter":1,"verse":9,"reference":"1 John 1:9","text":"If we confess our sins, he is faithful and just to forgive us our sins, and to cleanse us from all unrighteousness.","tags":["forgiveness"]},{"id":"REVELATION_3_20","book":"Revelation","chapter":3,"verse":20,"reference":"Revelation 3:20","text":"Behold, I stand at the door, and knock: if any man hear my voice, and open the door, I will come in to him, and will sup with him, and he with me.","tags":["invitation"]},{"id":"REVELATION_21_4","book":"Revelation","chapter":21,"verse":4,"reference":"Revelation 21:4","text":"And God shall wipe away all tears from their eyes; and there shall be no more death, neither sorrow, nor crying, neither shall there be any more pain: for the former things are passed away.","tags":["hope"]},{"id":"REVELATION_22_13","book":"Revelation","chapter":22,"verse":13,"reference":"Revelation 22:13","text":"I am Alpha and Omega, the beginning and the end, the first and the last.","tags":["deity"]},{"id":"TRU_ARCH_1","book":"TRU","reference":"TRU System Architecture","text":"Sovereign air-gapped zero-dependency local knowledge engine. No cloud, no CDN, no remote call.","tags":["architecture"]},{"id":"TRU_ARCH_2","book":"TRU","reference":"TRU Data Policy","text":"Offline-first IndexedDB persistence. Absolute privacy. A gap stays a gap.","tags":["privacy"]},{"id":"TRU_ARCH_3","book":"TRU","reference":"TRU Mission","text":"Clarity toward salvation. Free, spreadable, offline intelligence grounded in the Word.","tags":["mission"]},{"id":"TRU_ARCH_4","book":"TRU","reference":"TRU Constraints","text":"Pure vanilla JS. Single-file HTML. No CDNs. No remote APIs. No telemetry.","tags":["architecture"]},{"id":"TRU_ARCH_5","book":"TRU","reference":"TRU Annotations","text":"Personal notes on any node. Stored locally only.","tags":["notes"]},{"id":"TRU_ARCH_6","book":"TRU","reference":"TRU Graph","text":"Lightweight directed edges between nodes. Cross-references stay local.","tags":["graph"]},{"id":"TRU_ARCH_7","book":"TRU","reference":"TRU Gap Rule","text":"When the local index has no match, the answer is a gap. No invention, no remote fallback.","tags":["philosophy"]}];
+const SEDGES=[{"from":"JOHN_1_1","to":"GENESIS_1_1","label":"beginning"},{"from":"JOHN_1_14","to":"JOHN_1_1","label":"word made flesh"},{"from":"JOHN_3_16","to":"ROMANS_5_8","label":"love"},{"from":"JOHN_14_6","to":"JOHN_8_32","label":"truth"},{"from":"ROMANS_3_23","to":"ROMANS_6_23","label":"sin and wages"},{"from":"ROMANS_6_23","to":"ROMANS_10_9","label":"gift"},{"from":"ISAIAH_53_5","to":"ROMANS_5_8","label":"atonement"},{"from":"MATTHEW_22_37","to":"DEUTERONOMY_6_5","label":"commandment"},{"from":"EPHESIANS_2_8","to":"ROMANS_10_9","label":"grace faith"},{"from":"TRU_ARCH_3","to":"JOHN_8_32","label":"truth free"},{"from":"TRU_ARCH_7","to":"TRU_ARCH_2","label":"gap policy"}];
+let db=null,idx=null,docs=[],edges=[],notes={},ready=false;
+const STOP=new Set(["the","and","of","to","a","in","is","that","for","it","with","as","be","on","by","an","or","at","from"]);
+function tok(t,ks){return t.toLowerCase().replace(/[^\w\s']/g," ").split(/\s+/).filter(x=>x.length>1&&(ks||!STOP.has(x)))}
+function esc(s){return String(s).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,""")}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,DBV);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:"key"})};r.onsuccess=e=>{db=e.target.result;res(db)};r.onerror=e=>rej(e.target.error)})}
+function idbGet(k){return new Promise((res,rej)=>{const t=db.transaction(STORE,"readonly"),s=t.objectStore(STORE),q=s.get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function idbPut(rec){return new Promise((res,rej)=>{const t=db.transaction(STORE,"readwrite"),s=t.objectStore(STORE),q=s.put(rec);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
+function build(ds){
+const index={},dl={},meta={},tot=0;
+ds.forEach(d=>{
+const rt=tok(d.reference||"",1),tt=(d.tags||[]).map(x=>x.toLowerCase()),bt=tok(d.text||"",0);
+const all=[...rt,...rt,...tt,...bt];dl[d.id]=all.length||1;tot+=all.length;meta[d.id]=bt;
+const tf={};all.forEach(t=>{tf[t]=(tf[t]||0)+1});
+Object.keys(tf).forEach(t=>{if(!index[t])index[t]=[];index[t].push({id:d.id,tf:tf[t]})});
+});
+return{index,docLengths:dl,docMeta:meta,avgDocLength:tot/Math.max(ds.length,1),numDocs:ds.length,termCount:Object.keys(index).length,version:VER,builtAt:Date.now()};
+}
+function query(qs,ix,ds,k=20){
+const qt=tok(qs,0);if(!qt.length)return[];
+const scores={},k1=1.5,b=.75,{index,docLengths,docMeta,avgDocLength,numDocs}=ix;
+qt.forEach(term=>{
+const p=index[term];if(!p)return;
+const df=p.length,idf=Math.log(1+(numDocs-df+.5)/(df+.5));
+p.forEach(x=>{const tf=x.tf,dl=docLengths[x.id]||1,tn=(tf*(k1+1))/(tf+k1*(1-b+b*(dl/avgDocLength)));scores[x.id]=(scores[x.id]||0)+idf*tn});
+});
+if(qt.length>=2)Object.keys(scores).forEach(id=>{
+const seq=docMeta[id]||[];let bonus=0;
+for(let i=0;i<seq.length-1;i++)for(let q=0;q<qt.length-1;q++)if(seq[i]===qt[q]&&seq[i+1]===qt[q+1])bonus+=.35;
+let c=0,pos=-1;for(const t of qt){const n=seq.indexOf(t,pos+1);if(n>pos){c++;pos=n}}
+if(c===qt.length)bonus+=.6;scores[id]+=bonus;
+});
+return Object.keys(scores).map(id=>({doc:ds.find(d=>d.id===id),score:scores[id]})).filter(r=>r.doc&&r.score>.05).sort((a,b)=>b.score-a.score).slice(0,k);
+}
+function hl(text,q){
+const ts=tok(q,1);if(!ts.length)return esc(text);
+const e=ts.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+return esc(text).replace(new RegExp("\\b("+e.join("|")+")\\b","gi"),"<mark>$1</mark>");
+}
+function setSt(t,ty){const el=document.getElementById("st");el.textContent=t;el.style.backgroundColor=ty==="ok"?"var(--ok)":ty==="bad"?"var(--bad)":"var(--warn)"}
+function related(id){
+const o=[];edges.forEach(e=>{
+if(e.from===id){const d=docs.find(x=>x.id===e.to);if(d)o.push({doc:d,label:e.label||""})}
+else if(e.to===id){const d=docs.find(x=>x.id===e.from);if(d)o.push({doc:d,label:e.label||""})}
+});return o;
+}
+function render(results,q=""){
+const c=document.getElementById("rs"),bf=document.getElementById("bf").value,tf=document.getElementById("tf").value;
+let list=results;
+if(!q.trim()&&(bf||tf))list=docs.filter(d=>(!bf||d.book===bf)&&(!tf||(d.tags||[]).includes(tf))).map(d=>({doc:d,score:0}));
+else if(q.trim())list=results.filter(r=>(!bf||r.doc.book===bf)&&(!tf||(r.doc.tags||[]).includes(tf)));
+c.innerHTML="";
+if(!list.length){c.innerHTML=`<div class="empty">${q||bf||tf?`No local matches${q?` for “${esc(q)}”`:""}.<br>Gap recorded.`:"Type to search. Air-gapped. A gap stays a gap."}</div>`;return}
+const cn=document.createElement("div");cn.className="empty";cn.style.padding="4px 0 2px";cn.style.fontSize=".72rem";cn.textContent=list.length+" local hit"+(list.length===1?"":"s");c.appendChild(cn);
+list.forEach(({doc,score})=>{
+const card=document.createElement("div");card.className="rc";
+const tags=(doc.tags||[]).map(t=>`<span class="tg">${esc(t)}</span>`).join("");
+const rel=related(doc.id);
+const relH=rel.length?`<div class="rel">Related: ${rel.map(r=>`<a href="#" data-j="${esc(r.doc.id)}">${esc(r.doc.reference)}</a>`).join(" ")}</div>`:"";
+const has=!!notes[doc.id];
+const np=has?`<div class="nb"><strong>Note:</strong> ${esc(notes[doc.id].slice(0,120))}${notes[doc.id].length>120?"…":""}</div>`:"";
+card.innerHTML=`<div class="rt"><span>${esc(doc.reference)}</span><span class="scor">${score?score.toFixed(3):(doc.book||"")}</span></div><div>${hl(doc.text,q)}</div>${tags?`<div class="tags">${tags}</div>`:""}${np}${relH}<div class="ra"><button data-c="${esc(doc.reference+" — "+doc.text)}">COPY</button><button data-n="${esc(doc.id)}">${has?"EDIT NOTE":"ADD NOTE"}</button></div><div class="hid" id="ne-${esc(doc.id)}"><div class="nb"><textarea id="nta-${esc(doc.id)}">${has?esc(notes[doc.id]):""}</textarea><div class="ra" style="margin-top:6px"><button data-sn="${esc(doc.id)}">SAVE</button><button data-dn="${esc(doc.id)}">DELETE</button><button data-cn="${esc(doc.id)}">CANCEL</button></div></div></div>`;
+c.appendChild(card);
+});
+c.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>navigator.clipboard?.writeText(b.getAttribute("data-c")).then(()=>{b.textContent="COPIED";setTimeout(()=>b.textContent="COPY",1200)}).catch(()=>{}));
+c.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>document.getElementById("ne-"+b.getAttribute("data-n"))?.classList.toggle("hid"));
+c.querySelectorAll("[data-sn]").forEach(b=>b.onclick=async()=>{const id=b.getAttribute("data-sn"),v=(document.getElementById("nta-"+id)?.value||"").trim();if(v)notes[id]=v;else delete notes[id];await saveNotes();const qq=document.getElementById("q").value;render(qq.trim()?query(qq,idx,docs):[],qq)});
+c.querySelectorAll("[data-dn]").forEach(b=>b.onclick=async()=>{delete notes[b.getAttribute("data-dn")];await saveNotes();const qq=document.getElementById("q").value;render(qq.trim()?query(qq,idx,docs):[],qq)});
+c.querySelectorAll("[data-cn]").forEach(b=>b.onclick=()=>document.getElementById("ne-"+b.getAttribute("data-cn"))?.classList.add("hid"));
+c.querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();const id=a.getAttribute("data-j"),d=docs.find(x=>x.id===id);if(d){document.getElementById("q").value=d.reference;document.getElementById("xc").classList.add("on");render(query(d.reference,idx,docs),d.reference)}});
+}
+function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+async function loadNotes(){try{const s=await idbGet("user_notes");if(s&&s.map)notes=s.map}catch(_){}}
+async function saveNotes(){await idbPut({key:"user_notes",map:notes,savedAt:Date.now()})}
+async function loadImports(){try{const s=await idbGet("user_imports");if(s&&Array.isArray(s.docs))return s.docs}catch(_){}return[]}
+async function saveImports(ds){await idbPut({key:"user_imports",docs:ds,savedAt:Date.now()})}
+async function loadEdges(){try{const s=await idbGet("user_edges");if(s&&Array.isArray(s.edges))return s.edges}catch(_){}return null}
+async function saveEdges(es){await idbPut({key:"user_edges",edges:es,savedAt:Date.now()})}
+function merge(imps){const m={};SEED.forEach(d=>{m[d.id]=d});(imps||[]).forEach(d=>{if(d&&d.id&&d.reference&&d.text)m[d.id]={id:d.id,book:d.book||"Imported",chapter:d.chapter||0,verse:d.verse||0,reference:d.reference,text:d.text,tags:d.tags||[]}});return Object.values(m)}
+function fillFilters(){
+const books=[...new Set(docs.map(d=>d.book).filter(Boolean))].sort(),tags=[...new Set(docs.flatMap(d=>d.tags||[]))].sort();
+const bf=document.getElementById("bf"),tf=document.getElementById("tf"),cb=bf.value,ct=tf.value;
+bf.innerHTML=`<option value="">All books</option>`+books.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join("");
+tf.innerHTML=`<option value="">All tags</option>`+tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+bf.value=cb;tf.value=ct;
+}
+async function boot(force=false){
+const sb=document.getElementById("sb"),qi=document.getElementById("q");
+setSt("INDEX");sb.textContent=force?"Rebuilding...":"Checking local index...";qi.disabled=true;ready=false;
+try{
+await openDB();await loadNotes();
+const imps=await loadImports();docs=merge(imps);
+const se=await loadEdges();edges=se||[...SEDGES];
+let ix=null;
+if(!force){const s=await idbGet("main_index");if(s&&s.version===VER&&s.numDocs===docs.length){ix=s;sb.textContent=`Loaded • ${ix.numDocs} nodes • ${ix.termCount||"?"} terms • v${VER}`}}
+if(!ix){const t0=performance.now();ix=build(docs);await idbPut({key:"main_index",...ix});sb.textContent=`Built • ${ix.numDocs} nodes${imps.length?` (+${imps.length} imported)`:""} • ${ix.termCount} terms • ${(performance.now()-t0).toFixed(1)}ms • v${VER}`}
+idx=ix;ready=true;setSt("READY","ok");qi.disabled=false;fillFilters();qi.focus();render([]);
+}catch(err){console.error(err);setSt("ERROR","bad");sb.textContent="Index failure: "+(err.message||err);document.getElementById("rs").innerHTML=`<div class="empty">Local storage error.</div>`}
+}
+const dsearch=debounce(q=>{if(!ready||!idx)return;render(query(q,idx,docs),q)},110);
+const qi=document.getElementById("q"),xc=document.getElementById("xc");
+qi.addEventListener("input",e=>{const v=e.target.value;xc.classList.toggle("on",!!v);if(!v.trim()){render([]);return}dsearch(v)});
+xc.onclick=()=>{qi.value="";xc.classList.remove("on");render([]);qi.focus()};
+["bf","tf"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{const q=qi.value;render(q.trim()?query(q,idx,docs):[],q)}));
+document.getElementById("rb").onclick=()=>boot(true);
+document.getElementById("eb").onclick=()=>{
+const blob=new Blob([JSON.stringify({version:VER,exportedAt:new Date().toISOString(),docs,edges,notes},null,2)],{type:"application/json"});
+const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=`tru-search-v${VER}-export.json`;a.click();URL.revokeObjectURL(u);
+};
+const ia=document.getElementById("ia");
+document.getElementById("ib").onclick=()=>{ia.classList.toggle("hid");document.getElementById("np").classList.add("hid");document.getElementById("gp").classList.add("hid")};
+document.getElementById("iac").onclick=()=>ia.classList.add("hid");
+document.getElementById("iaa").onclick=async()=>{
+const raw=document.getElementById("it").value.trim();if(!raw)return;
+try{
+const p=JSON.parse(raw);let ds=Array.isArray(p)?p:(p.docs||[]);
+if(p.notes)notes={...notes,...p.notes};
+if(p.edges&&Array.isArray(p.edges)){edges=p.edges;await saveEdges(edges)}
+const valid=ds.filter(d=>d&&d.id&&d.reference&&d.text);
+if(!valid.length&&!p.notes&&!p.edges)throw new Error("No valid documents");
+if(valid.length)await saveImports(valid);await saveNotes();
+ia.classList.add("hid");document.getElementById("it").value="";await boot(true);
+}catch(err){alert("Import failed: "+(err.message||err))}
+};
+document.getElementById("nb").onclick=()=>{
+const p=document.getElementById("np");p.classList.toggle("hid");ia.classList.add("hid");document.getElementById("gp").classList.add("hid");
+if(!p.classList.contains("hid")){const el=document.getElementById("nl"),ids=Object.keys(notes);
+el.innerHTML=ids.length?ids.map(id=>{const d=docs.find(x=>x.id===id);return`<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)"><div style="color:var(--accent);font-size:.75rem">${esc(d?d.reference:id)}</div><div style="margin-top:2px">${esc(notes[id])}</div></div>`}).join(""):`<div class="empty" style="padding:12px">No notes yet.</div>`}
+};
+document.getElementById("gb").onclick=()=>{
+const p=document.getElementById("gp");p.classList.toggle("hid");ia.classList.add("hid");document.getElementById("np").classList.add("hid");
+if(!p.classList.contains("hid"))renderGraph();
+};
+function renderGraph(){
+const el=document.getElementById("gl");
+if(!edges.length){el.innerHTML=`<div class="empty" style="padding:12px">No edges.</div>`;return}
+el.innerHTML=edges.map((e,i)=>{
+const f=docs.find(d=>d.id===e.from),t=docs.find(d=>d.id===e.to);
+return`<div style="margin-bottom:4px;font-size:.72rem"><span style="color:var(--accent)">${esc(f?f.reference:e.from)}</span> → <span style="color:var(--muted)">${esc(e.label||"")}</span> → <span style="color:var(--accent)">${esc(t?t.reference:e.to)}</span> <button data-de="${i}">×</button></div>`
+}).join("");
+el.querySelectorAll("[data-de]").forEach(b=>b.onclick=async()=>{edges.splice(+b.getAttribute("data-de"),1);await saveEdges(edges);renderGraph()});
+}
+document.getElementById("ea").onclick=async()=>{
+const f=document.getElementById("ef").value.trim(),t=document.getElementById("et").value.trim(),l=document.getElementById("el").value.trim();
+if(!f||!t)return;edges.push({from:f,to:t,label:l});await saveEdges(edges);
+document.getElementById("ef").value="";document.getElementById("et").value="";document.getElementById("el").value="";renderGraph();
+};
+document.addEventListener("keydown",e=>{
+if(e.key==="/"&&document.activeElement!==qi&&!e.metaKey&&!e.ctrlKey){e.preventDefault();qi.focus()}
+if(e.key==="Escape"&&document.activeElement===qi){qi.value="";xc.classList.remove("on");render([])}
+});
+window.addEventListener("DOMContentLoaded",()=>boot(false));
+</script>
 </body>
 </html>
